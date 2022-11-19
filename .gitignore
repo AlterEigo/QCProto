@@ -1,2 +1,7 @@
+*
+!*/
+!*.rs
+![Cc]argo.toml
+
 /target
 /Cargo.lock
