@@ -16,6 +16,13 @@ use http::Version;
 mod types;
 pub use types::*;
 
+/// An interface for dispatching any received
+/// data and possibly delegating it to another
+/// specific data handler
+pub trait Dispatcher<T>: Send + Sync {
+    fn dispatch(&self, data: T) -> UResult;
+}
+
 /// Adapter trait which indicates if a type is able to
 /// connect to some address and return a stream as a
 /// result
