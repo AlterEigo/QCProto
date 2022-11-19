@@ -13,6 +13,9 @@ use std::sync::Arc;
 
 use http::Version;
 
+mod types;
+pub use types::*;
+
 /// Adapter trait which indicates if a type is able to
 /// connect to some address and return a stream as a
 /// result
