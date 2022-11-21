@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-pub const PROTOCOL_VERSION: u16 = 101;
+pub const PROTOCOL_VERSION: u16 = 102;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ActorInfos {
