@@ -396,12 +396,13 @@ impl StreamHandler<UnixStream> for DefaultUnixStreamHandler {
         let mut buffer = String::new();
         stream.read_to_string(&mut buffer);
         let command = serde_json::from_str::<Command>(&buffer);
-        if let Err(_) = command {
+        if let Err(why) = command {
             write!(
                 stream,
                 "{}",
                 serde_json::to_string(&TransmissionResult::BadSyntax)?
             );
+            return Err(why.into());
         }
         let command = command.unwrap();
         let used_protocol = PROTOCOL_VERSION;
