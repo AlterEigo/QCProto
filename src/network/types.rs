@@ -425,6 +425,12 @@ impl DefaultCommandDispatcher {
 impl Dispatcher<Command> for DefaultCommandDispatcher {
     fn dispatch(&self, data: Command) -> UResult {
         info!(self.logger, "Incoming command: {:#?}", data);
-        Ok(())
+        match &data.kind {
+            CommandKind::ForwardMessage {..} => self.handler.forward_message(data),
+            _ => {
+                warn!(self.logger, "Unhandled command kind: {:#?}", data);
+                Ok(())
+            }
+        }
     }
 }
