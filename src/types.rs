@@ -1,12 +1,12 @@
-use std::fmt::Display;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 
-const PROTOCOL_VERSION: u16 = 100;
+pub const PROTOCOL_VERSION: u16 = 101;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ActorInfos {
     pub server: String,
-    pub sender: String,
+    pub name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

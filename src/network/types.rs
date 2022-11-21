@@ -1,17 +1,18 @@
 use std::marker::PhantomData;
 
 use crate::prelude::*;
-use std::io;
-use std::io::{Read,Write};
+use crate::types::PROTOCOL_VERSION;
 use slog::Logger;
+use std::io;
+use std::io::{Read, Write};
 
 use std::net::{TcpListener, TcpStream};
 use std::os::unix::net::{UnixListener, UnixStream};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::thread::ScopedJoinHandle;
 
-use slog::{o, info, debug, warn, crit, error};
+use slog::{crit, debug, error, info, o, warn};
 
 #[derive(Debug)]
 pub struct DataSender<StreamT>
@@ -101,7 +102,7 @@ impl CommandServerBuilder {
     /// default modules
     pub fn logger(self, logger: Logger) -> Self {
         Self {
-            logger: Some(logger),
+            logger: Some(logger.new(o!("module" => "CommandServer"))),
             ..self
         }
     }
@@ -382,7 +383,10 @@ impl DefaultUnixStreamHandler {
         dispatcher: Arc<dyn Dispatcher<Command>>,
         logger: Logger,
     ) -> DefaultUnixStreamHandler {
-        DefaultUnixStreamHandler { dispatcher, logger }
+        DefaultUnixStreamHandler {
+            dispatcher,
+            logger: logger.new(o!("module" => "DefaultUnixStreamHandler")),
+        }
     }
 }
 
@@ -400,6 +404,12 @@ impl StreamHandler<UnixStream> for DefaultUnixStreamHandler {
             );
         }
         let command = command.unwrap();
+        let used_protocol = PROTOCOL_VERSION;
+        if command.protocol_version != used_protocol {
+            let response = serde_json::to_string(&TransmissionResult::MismatchedVersions)?;
+            write!(stream, "{}", response);
+            return Err(format!("{:?}", TransmissionResult::MismatchedVersions).into());
+        }
         write!(stream, "{}", response);
         self.dispatcher.dispatch(command)
     }
@@ -417,7 +427,7 @@ impl DefaultCommandDispatcher {
     pub fn new(handler: Arc<dyn CommandHandler>, logger: Logger) -> Self {
         Self {
             handler: handler.clone(),
-            logger,
+            logger: logger.new(o!("module" => "DefaultCommandDispatcher")),
         }
     }
 }
@@ -425,8 +435,19 @@ impl DefaultCommandDispatcher {
 impl Dispatcher<Command> for DefaultCommandDispatcher {
     fn dispatch(&self, data: Command) -> UResult {
         info!(self.logger, "Incoming command: {:#?}", data);
+        let used_protocol = PROTOCOL_VERSION;
+        if used_protocol != data.protocol_version {
+            error!(
+                self.logger,
+                "Mismatched protocol versions, expected: {}; received: {}",
+                used_protocol,
+                data.protocol_version
+            );
+            return Err(format!("{:?}", TransmissionResult::MismatchedVersions).into());
+        }
+
         match &data.kind {
-            CommandKind::ForwardMessage {..} => self.handler.forward_message(data),
+            CommandKind::ForwardMessage { .. } => self.handler.forward_message(data),
             _ => {
                 warn!(self.logger, "Unhandled command kind: {:#?}", data);
                 Ok(())
