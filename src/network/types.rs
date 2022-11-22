@@ -151,6 +151,7 @@ impl CommandServerBuilder {
             _ => (),
         };
 
+        std::fs::remove_file(self.bind_addr.as_ref().unwrap());
         let stream_handler = self.stream_handler.unwrap();
         let stream_listener = self.stream_listener.unwrap_or(Arc::new(
             StreamListener::<UnixListener>::new()
